@@ -36,6 +36,12 @@ describe('Acceptance: smoke-test', function() {
 
   afterEach(function() {
     delete process.env._TESTEM_CONFIG_JS_RAN;
+    /*
+      we are forced to invalidate testem config module cache
+      to ensure that each test always reads from the file system,
+      not the memory cache.
+    */
+    delete require.cache[path.join(process.cwd(), 'testem.js')];
 
     return cleanupRun().then(function() {
       assertDirEmpty('tmp');
@@ -119,19 +125,18 @@ describe('Acceptance: smoke-test', function() {
       });
   });
 
-  // TODO: re-enable, something is funky with test cleanup...
-  // it('ember test exits with zero when tests pass', function() {
-  //   return copyFixtureFiles('smoke-tests/passing-test')
-  //     .then(function() {
-  //       return ember(['test'])
-  //         .then(function(result) {
-  //           expect(result.code).to.equal(0);
-  //         })
-  //         .catch(function() {
-  //           expect(false, 'should NOT have rejected with a failing test');
-  //         });
-  //     });
-  // });
+  it('ember test exits with zero when tests pass', function() {
+    return copyFixtureFiles('smoke-tests/passing-test')
+      .then(function() {
+        return ember(['test'])
+          .then(function(result) {
+            expect(result.exitCode).to.equal(0);
+          })
+          .catch(function() {
+            expect(false, 'should NOT have rejected with a failing test').to.be.ok;
+          });
+      });
+  });
 
   it('ember test still runs when only a JavaScript testem config exists', function() {
     return copyFixtureFiles('smoke-tests/js-testem-config')
